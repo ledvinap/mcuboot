@@ -193,6 +193,10 @@ boot_check_image(struct boot_loader_state *state, struct boot_status *bs, int sl
     FIH_CALL(bootutil_img_validate, fih_rc, state, hdr, fap, tmpbuf, BOOT_TMPBUF_SZ,
              NULL, 0, NULL);
 
+    if (FIH_NOT_EQ(fih_rc, FIH_SUCCESS)) {
+        BOOT_LOG_DBG("boot_check_image: validation failed");
+    }
+
     FIH_RET(fih_rc);
 }
 

@@ -353,6 +353,7 @@ bootutil_img_validate(struct boot_loader_state *state,
 
             FIH_CALL(boot_fih_memequal, fih_rc, hash, buf, sizeof(hash));
             if (FIH_NOT_EQ(fih_rc, FIH_SUCCESS)) {
+                BOOT_LOG_DBG("bootutil_img_validate: hash mismatch");
                 FIH_SET(fih_rc, FIH_FAILURE);
                 goto out;
             }

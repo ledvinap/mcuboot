@@ -623,7 +623,11 @@ boot_enc_load(struct boot_loader_state *state, int slot,
         return -1;
     }
 
-    return boot_decrypt_key(buf, bs->enckey[slot]);
+    rc = boot_decrypt_key(buf, bs->enckey[slot]);
+    if (rc != 0) {
+        BOOT_LOG_DBG("boot_enc_load: decrypt key failed rc=%d", rc);
+    }
+    return rc;
 }
 
 int

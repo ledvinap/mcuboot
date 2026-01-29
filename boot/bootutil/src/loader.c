@@ -639,6 +639,9 @@ boot_validate_slot(struct boot_loader_state *state, int slot,
                            fih_rc, BOOT_CURR_IMG(state), slot);
         if (FIH_EQ(fih_rc, FIH_BOOT_HOOK_REGULAR)) {
             FIH_CALL(boot_check_image, fih_rc, state, bs, slot);
+            if (FIH_NOT_EQ(fih_rc, FIH_SUCCESS)) {
+                BOOT_LOG_DBG("boot_validate_slot: boot_check_image failed");
+            }
         }
     }
 #if defined(MCUBOOT_SWAP_USING_OFFSET)
