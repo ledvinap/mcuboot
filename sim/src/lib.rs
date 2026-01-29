@@ -41,6 +41,7 @@ Mcuboot simulator
 Usage:
   bootsim sizes
   bootsim run --device TYPE [--align SIZE]
+  bootsim run-image --device TYPE --image0 PATH [--image1 PATH] [--align SIZE] [--confirm]
   bootsim runall
   bootsim (--help | --version)
 
@@ -50,14 +51,21 @@ Options:
   --device TYPE      MCU to simulate
                      Valid values: stm32f4, k64f
   --align SIZE       Flash write alignment
+  --image0 PATH      External image for primary slot
+  --image1 PATH      External image for secondary slot
+  --confirm          Mark primary as confirmed and run a second boot
 ";
 
 #[derive(Debug, Deserialize)]
 struct Args {
     flag_device: Option<DeviceName>,
     flag_align: Option<AlignArg>,
+    flag_image0: Option<String>,
+    flag_image1: Option<String>,
+    flag_confirm: bool,
     cmd_sizes: bool,
     cmd_run: bool,
+    cmd_run_image: bool,
     cmd_runall: bool,
 }
 
@@ -145,7 +153,7 @@ pub fn main() {
     let mut status = RunStatus::new();
     if args.cmd_run {
 
-        let align = args.flag_align.map(|x| x.0).unwrap_or(1);
+        let align = args.flag_align.as_ref().map(|x| x.0).unwrap_or(1);
 
 
         let device = match args.flag_device {
@@ -154,6 +162,46 @@ pub fn main() {
         };
 
         status.run_single(device, align, 0xff);
+    }
+
+    if args.cmd_run_image {
+        let align = args.flag_align.as_ref().map(|x| x.0).unwrap_or(1);
+
+        let device = match args.flag_device {
+            None => panic!("Missing mandatory device argument"),
+            Some(dev) => dev,
+        };
+
+        let image0 = match args.flag_image0.as_deref() {
+            None => panic!("Missing --image0 for run-image"),
+            Some(path) => path,
+        };
+        let image1 = args.flag_image1.as_deref();
+        let upgrade = image1.is_some();
+
+        let builder = match ImagesBuilder::new(device, align, 0xff) {
+            Ok(run) => run,
+            Err(msg) => {
+                warn!("Skipping {}: {}", device, msg);
+                process::exit(1);
+            }
+        };
+
+        let mut images = match builder.make_external_images(image0, image1) {
+            Ok(v) => v,
+            Err(msg) => {
+                warn!("Failed to load external images: {}", msg);
+                process::exit(1);
+            }
+        };
+
+        if images.run_boot_once(upgrade, args.flag_confirm) {
+            error!("run-image succeeded");
+            process::exit(0);
+        } else {
+            error!("run-image failed");
+            process::exit(1);
+        }
     }
 
     if args.cmd_runall {
